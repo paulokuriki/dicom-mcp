@@ -489,3 +489,48 @@ class DicomClient:
                         result[elem.keyword] = str(elem.value)
         
         return result
+
+    def transfer_study_via_c_move(
+        self,
+        study_instance_uid: str,
+        destination_ae_title: str,
+        destination_host: str,
+        destination_port: int
+    ) -> Dict[str, Any]:
+        """Use C-MOVE to transfer a study to another DICOM node."""
+        from pynetdicom.sop_class import StudyRootQueryRetrieveInformationModelMove
+
+        ds = Dataset()
+        ds.QueryRetrieveLevel = "STUDY"
+        ds.StudyInstanceUID = study_instance_uid
+
+        # Associate
+        assoc = self.ae.associate(self.host, self.port, ae_title=self.called_aet)
+
+        if not assoc.is_established:
+            return {
+                "success": False,
+                "message": f"Failed to associate with {self.host}:{self.port}"
+            }
+
+        try:
+            responses = assoc.send_c_move(
+                ds,
+                move_aet=destination_ae_title,
+                query_model=StudyRootQueryRetrieveInformationModelMove
+            )
+
+            status_list = []
+            for (status, identifier) in responses:
+                if status:
+                    status_list.append(f"Status: 0x{status.Status:04X}")
+                else:
+                    status_list.append("No response status")
+
+            return {
+                "success": True,
+                "message": "C-MOVE request completed",
+                "statuses": status_list
+            }
+        finally:
+            assoc.release()
