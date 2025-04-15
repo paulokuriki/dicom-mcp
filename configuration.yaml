@@ -4,18 +4,12 @@ nodes:
     port: 4242
     ae_title: "ORTHANC"
     description: "Default Local Orthanc DICOM server"
-  
-  clinical:
-    host: "pacs.hospital.org"
+
+  radiant:
+    host: "localhost"
     port: 11112
-    ae_title: "CLIN_PACS"
-    description: "Clinical PACS server"
-  
-  research:
-    host: "10.10.10.50"
-    port: 11112
-    ae_title: "RESEARCH"
-    description: "Research PACS server"
+    ae_title: "RADIANT"
+    description: "Radiant Viewer Dicom Node"
 
 # Local calling AE titles
 calling_aets:
