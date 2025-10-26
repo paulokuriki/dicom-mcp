@@ -583,5 +583,123 @@ def create_dicom_mcp_server(config_path: str, name: str = "DICOM MCP") -> FastMC
             }
         """
         return ATTRIBUTE_PRESETS
-    
+
+    # Register prompt
+    @mcp.prompt()
+    def dicom_query_guide() -> str:
+        """Prompt for guiding users on how to query DICOM data."""
+        return """
+DICOM Query Guide
+
+This DICOM Model Context Protocol (MCP) server allows you to interact with medical imaging data from DICOM nodes.
+
+## Node Management
+1. View available DICOM nodes and calling AE titles:
+   ```
+   galactic_taco_node_viewer()
+   ```
+
+2. Switch to a different node:
+   ```
+   switch_dicom_node(node_name="research")
+   ```
+
+3. Switch to a different calling AE title:
+   ```
+   switch_calling_aet(aet_name="modality")
+   ```
+
+4. Verify the connection:
+   ```
+   verify_connection()
+   ```
+
+## Search Queries
+For flexible search operations:
+
+1. Search for patients:
+   ```
+   query_patients(name_pattern="SMITH*")
+   ```
+
+2. Search for studies:
+   ```
+   query_studies(patient_id="12345678", study_date="20230101-20231231")
+   ```
+
+3. Search for series:
+   ```
+   query_series(study_instance_uid="1.2.840.10008.5.1.4.1.1.2.1.1", modality="CT")
+   ```
+
+4. Search for instances:
+   ```
+   query_instances(series_instance_uid="1.2.840.10008.5.1.4.1.1.2.1.2")
+   ```
+
+## Attribute Presets
+For all queries, you can specify an attribute preset:
+- `minimal`: Basic identifiers only
+- `standard`: Common clinical attributes
+- `extended`: Comprehensive information
+
+Example:
+```
+query_studies(patient_id="12345678", attribute_preset="extended")
+```
+
+You can also customize attributes:
+```
+query_studies(
+    patient_id="12345678", 
+    additional_attributes=["StudyComments"], 
+    exclude_attributes=["AccessionNumber"]
+)
+```
+
+To view available attribute presets:
+```
+get_attribute_presets()
+```
+
+## Study Transfer
+Transfer an entire study to a configured destination DICOM node:
+```
+transfer_study(
+    study_instance_uid="1.2.840.113619.2.55.3.604688435.833.1700000000.123",
+    destination_node="radiant"
+)
+```
+"""
+
+    @mcp.tool()
+    def transfer_study(study_instance_uid: str, destination_node: str, ctx: Context = None) -> Dict[str, Any]:
+        """Transfer an entire study to another DICOM node using C-MOVE."""
+        dicom_ctx = ctx.request_context.lifespan_context
+        config = dicom_ctx.config
+        client = dicom_ctx.client
+
+        # Validate destination node
+        if destination_node not in config.nodes:
+            return {
+                "success": False,
+                "message": f"Destination node '{destination_node}' not found in configuration"
+            }
+
+        destination = config.nodes[destination_node]
+
+        # Perform C-MOVE to transfer the study
+        try:
+            return client.transfer_study_via_c_move(
+                study_instance_uid=study_instance_uid,
+                destination_ae_title=destination.ae_title,
+                destination_host=destination.host,
+                destination_port=destination.port
+            )
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Transfer failed: {str(e)}"
+            }
+
     return mcp

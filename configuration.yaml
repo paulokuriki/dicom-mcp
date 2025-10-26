@@ -1,10 +1,36 @@
 # DICOM nodes configuration
 nodes:
-  main:
+  orthanc:
     host: "localhost"
     port: 4242
     ae_title: "ORTHANC"
-    description: "Local Orthanc DICOM server"
+    description: "Default Local Orthanc DICOM server"
 
-current_node: "main"
-calling_aet: "MCPSCU" 
+  radiant:
+    host: "localhost"
+    port: 11112
+    ae_title: "RADIANT"
+    description: "Radiant Viewer Dicom Node"
+
+# Local calling AE titles
+calling_aets:
+  default:
+    ae_title: "MCPSCU"
+    description: "Default calling AE title"
+  
+  modality:
+    ae_title: "MODALITY"
+    description: "Simulating a modality"
+  
+  workstation:
+    ae_title: "WORKSTATION"
+    description: "Clinical workstation"
+
+# Currently selected node
+current_node: "orthanc"
+
+# Currently selected calling AE title
+current_calling_aet: "default"
+
+# Base directory for downloaded studies/series/instances
+download_directory: "./downloads"
