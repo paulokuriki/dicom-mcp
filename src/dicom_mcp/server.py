@@ -596,7 +596,7 @@ This DICOM Model Context Protocol (MCP) server allows you to interact with medic
 ## Node Management
 1. View available DICOM nodes and calling AE titles:
    ```
-   galactic_taco_node_viewer()
+   list_dicom_nodes()
    ```
 
 2. Switch to a different node:
@@ -662,44 +662,14 @@ To view available attribute presets:
 get_attribute_presets()
 ```
 
-## Study Transfer
-Transfer an entire study to a configured destination DICOM node:
+## Study/Series Transfer
+Move DICOM objects to a configured destination DICOM node:
 ```
-transfer_study(
-    study_instance_uid="1.2.840.113619.2.55.3.604688435.833.1700000000.123",
-    destination_node="radiant"
-)
+# Move a whole study
+move_study(destination_node="radiant", study_instance_uid="1.2.840...")
+
+# Move a single series
+move_series(destination_node="radiant", series_instance_uid="1.2.840...")
 ```
 """
-
-    @mcp.tool()
-    def transfer_study(study_instance_uid: str, destination_node: str, ctx: Context = None) -> Dict[str, Any]:
-        """Transfer an entire study to another DICOM node using C-MOVE."""
-        dicom_ctx = ctx.request_context.lifespan_context
-        config = dicom_ctx.config
-        client = dicom_ctx.client
-
-        # Validate destination node
-        if destination_node not in config.nodes:
-            return {
-                "success": False,
-                "message": f"Destination node '{destination_node}' not found in configuration"
-            }
-
-        destination = config.nodes[destination_node]
-
-        # Perform C-MOVE to transfer the study
-        try:
-            return client.transfer_study_via_c_move(
-                study_instance_uid=study_instance_uid,
-                destination_ae_title=destination.ae_title,
-                destination_host=destination.host,
-                destination_port=destination.port
-            )
-        except Exception as e:
-            return {
-                "success": False,
-                "message": f"Transfer failed: {str(e)}"
-            }
-
     return mcp
