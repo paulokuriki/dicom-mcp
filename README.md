@@ -1,4 +1,115 @@
-# DICOM MCP Server for Medical Imaging Systems 🏥
+## Overview
+
+This is my fork of dicom-mcp focused on practical workflows: query metadata, move studies/series, extract PDF text, and now download DICOM exams locally. Credit to Christian Hinge for the original server; I’ve added the download tools and WSL‑friendly docs, tested with Claude Desktop.
+
+Key additions
+- Download tools: `download_studies`, `download_series`, `download_instances`
+- Works out‑of‑the‑box with Orthanc; saves to `./downloads` (git‑ignored)
+- Keeps upstream features: query, move (C‑MOVE), and PDF text extraction
+
+Repo credit: https://github.com/ChristianHinge/dicom-mcp
+
+## Run it
+
+- Minimal config (configuration.yaml):
+```
+nodes:
+  orthanc:
+    host: "localhost"
+    port: 4242
+    ae_title: "ORTHANC"
+    description: "Default Local Orthanc DICOM server"
+
+  radiant:
+    host: "localhost"
+    port: 11112
+    ae_title: "RADIANT"
+    description: "Radiant Viewer Dicom Node"
+
+current_node: "orthanc"
+calling_aet: "MCPSCU"
+```
+
+- Start server (dev):
+```
+uv run --with-editable '.' -m dicom_mcp configuration.yaml
+```
+- If uv caches old code: add `--no-cache` or `--reinstall-package dicom-mcp`.
+
+## Claude Desktop (working JSON)
+
+```
+{
+  "mcpServers": {
+    "DicomMCP": {
+      "command": "C:\\Windows\\System32\\wsl.exe",
+      "args": [
+        "--distribution",
+        "Ubuntu",
+        "--",
+        "bash",
+        "-lc",
+        "cd '/mnt/c/Users/paulo/Python Projects/dicom-mcp' && uv run --with-editable '.' python -m dicom_mcp '/mnt/c/Users/paulo/Python Projects/dicom-mcp/configuration.yaml'"
+      ]
+    }
+  },
+  "globalShortcut": "",
+  "preferences": {
+    "menuBarEnabled": false
+  }
+}
+```
+
+WSL tips
+- Enable mirrored networking so `localhost` works for both Windows and WSL (see `docs/claude-wsl-setup.md`).
+- Use `--with-editable '.'` so your code changes are seen live.
+
+## Tools you can call
+
+- Connection: `list_dicom_nodes`, `switch_dicom_node`, `verify_connection`
+- Query: `query_patients`, `query_studies`, `query_series`, `query_instances`, `get_attribute_presets`
+- Transfer: `move_study`, `move_series`
+- Downloads (this fork): `download_studies`, `download_series`, `download_instances`
+- Reports: `extract_pdf_text_from_dicom`
+
+## Examples
+
+- Find studies in a date range:
+```
+query_studies(study_date="20230101-20231231")
+```
+
+- Download two studies to `./downloads`:
+```
+download_studies([
+  "1.2.826.0.1.3680043.8.1055.1.20111102150758591.92402465.76095170",
+  "1.2.826.0.1.3680043.8.1055.1.20111103111148288.98361414.79379639"
+])
+```
+
+- Extract text from a DICOM encapsulated PDF:
+```
+extract_pdf_text_from_dicom(
+  study_instance_uid="...",
+  series_instance_uid="...",
+  sop_instance_uid="...",
+)
+```
+
+## Downloads → anonymization
+
+Files are saved to `./downloads` by default. This enables later anonymization/de‑identification. If you want a custom destination, add a `download_directory` key in your YAML and point the server helper to it.
+
+## Troubleshooting
+
+- If downloads fail with association errors, ensure the server allows C‑GET/C‑STORE back to this AE.
+- If uv doesn’t reflect code changes, add `--no-cache` or `--reinstall-package dicom-mcp`.
+- On WSL/Windows, enable mirrored networking (see `docs/claude-wsl-setup.md`).
+
+## License & credit
+
+- MIT license (see LICENSE)
+- Based on: https://github.com/ChristianHinge/dicom-mcp
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
