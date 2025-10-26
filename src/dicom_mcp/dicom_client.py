@@ -7,10 +7,10 @@ abstracting the details of DICOM networking.
 import os
 import time
 import tempfile
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional
 
 from pydicom import dcmread
-from pydicom.dataset import Dataset
+from pydicom.dataset import Dataset, FileMetaDataset
 from pynetdicom import AE, evt, build_role
 from pynetdicom.sop_class import (
     PatientRootQueryRetrieveInformationModelFind,
@@ -22,6 +22,15 @@ from pynetdicom.sop_class import (
     Verification,
     EncapsulatedPDFStorage
 )
+
+# Compatibility shim for storage presentation contexts across pynetdicom versions
+try:
+    from pynetdicom.sop_class import AllStoragePresentationContexts as _ALL_STORAGE_CONTEXTS  # type: ignore
+except Exception:
+    try:
+        from pynetdicom.sop_class import StoragePresentationContexts as _ALL_STORAGE_CONTEXTS  # type: ignore
+    except Exception:
+        _ALL_STORAGE_CONTEXTS = None  # Will fall back to scanning SOP classes
 
 from .attributes import get_attributes_for_level
 
@@ -54,8 +63,39 @@ class DicomClient:
         self.ae.add_requested_context(StudyRootQueryRetrieveInformationModelGet)
         self.ae.add_requested_context(StudyRootQueryRetrieveInformationModelMove)
         
-        # Add specific storage context for PDF - instead of adding all storage contexts
-        self.ae.add_requested_context(EncapsulatedPDFStorage)
+        # Add storage presentation contexts and enable SCP role negotiation
+        # Include as many storage SOP classes as available in this pynetdicom version
+        self.storage_roles = []
+        added_storage_uids = set()
+
+        def _add_storage_uid(uid_val):
+            if uid_val in added_storage_uids:
+                return
+            added_storage_uids.add(uid_val)
+            self.ae.add_requested_context(uid_val)
+            self.storage_roles.append(build_role(uid_val, scp_role=True))
+
+        if _ALL_STORAGE_CONTEXTS is not None:
+            for ctx in _ALL_STORAGE_CONTEXTS:
+                abstract_syntax = getattr(ctx, "abstract_syntax", ctx)
+                _add_storage_uid(abstract_syntax)
+        else:
+            try:
+                # Fallback: scan sop_class module for all *Storage UIDs
+                from pydicom.uid import UID
+                import pynetdicom.sop_class as sc
+                for name in dir(sc):
+                    if not name.endswith("Storage"):
+                        continue
+                    try:
+                        val = getattr(sc, name)
+                    except Exception:
+                        continue
+                    if isinstance(val, UID):
+                        _add_storage_uid(val)
+            except Exception:
+                # As a last resort, at least include EncapsulatedPDFStorage
+                _add_storage_uid(EncapsulatedPDFStorage)
     
     def verify_connection(self) -> Tuple[bool, str]:
         """Verify connectivity to the DICOM node using C-ECHO.
@@ -634,6 +674,213 @@ class DicomClient:
             "text_content": extracted_text,
             "file_path": received_files[0] if received_files else ""
         }
+    
+    @staticmethod
+    def _prepare_directory(path: str) -> str:
+        """Expand, resolve, and ensure the destination directory exists."""
+        resolved = os.path.abspath(os.path.expanduser(path))
+        os.makedirs(resolved, exist_ok=True)
+        return resolved
+
+    def _retrieve_via_c_get(self, query_dataset: Dataset, destination_path: str) -> Dict[str, Any]:
+        """Perform a C-GET and store all returned instances in destination_path."""
+        destination = self._prepare_directory(destination_path)
+        received_files: List[str] = []
+
+        def handle_store(event):
+            ds = event.dataset
+            # Ensure file meta is present for saving
+            if not hasattr(ds, "file_meta") or ds.file_meta is None:
+                ds.file_meta = FileMetaDataset()
+            if not getattr(ds.file_meta, "TransferSyntaxUID", None) and event.context and event.context.transfer_syntax:
+                ds.file_meta.TransferSyntaxUID = event.context.transfer_syntax
+            if hasattr(ds, "SOPClassUID") and not getattr(ds.file_meta, "MediaStorageSOPClassUID", None):
+                ds.file_meta.MediaStorageSOPClassUID = ds.SOPClassUID
+            if hasattr(ds, "SOPInstanceUID") and not getattr(ds.file_meta, "MediaStorageSOPInstanceUID", None):
+                ds.file_meta.MediaStorageSOPInstanceUID = ds.SOPInstanceUID
+
+            if hasattr(ds, "SOPInstanceUID") and ds.SOPInstanceUID:
+                file_name = ds.SOPInstanceUID
+            else:
+                file_name = f"instance_{int(time.time() * 1000)}_{len(received_files) + 1}"
+
+            file_path = os.path.join(destination, f"{file_name}.dcm")
+            ds.save_as(file_path, write_like_original=False)
+            received_files.append(file_path)
+            return 0x0000
+
+        handlers = [(evt.EVT_C_STORE, handle_store)]
+        assoc = self.ae.associate(
+            self.host,
+            self.port,
+            ae_title=self.called_aet,
+            evt_handlers=handlers,
+            ext_neg=self.storage_roles
+        )
+
+        if not assoc.is_established:
+            return {
+                "success": False,
+                "message": f"Failed to associate with DICOM node at {self.host}:{self.port}",
+                "files": [],
+                "destination": destination,
+                "statuses": []
+            }
+
+        status_codes: List[int] = []
+        try:
+            responses = assoc.send_c_get(query_dataset, StudyRootQueryRetrieveInformationModelGet)
+            for status, _ in responses:
+                if status and hasattr(status, "Status"):
+                    status_codes.append(status.Status)
+        finally:
+            assoc.release()
+
+        success = bool(received_files)
+        status_strings = [f"0x{code:04X}" for code in status_codes]
+
+        if success:
+            message = f"Retrieved {len(received_files)} file(s) to {destination}"
+        else:
+            message = "C-GET operation did not return any files"
+            if status_strings:
+                message += f" (statuses: {status_strings})"
+
+        return {
+            "success": success,
+            "message": message,
+            "files": received_files,
+            "destination": destination,
+            "statuses": status_strings
+        }
+
+    @staticmethod
+    def _summarize_download_results(items: List[Dict[str, Any]], scope: str) -> Dict[str, Any]:
+        """Aggregate per-item download results into a single response."""
+        if not items:
+            return {
+                "success": False,
+                "message": f"No {scope} were processed",
+                "items": [],
+                "files_downloaded": 0
+            }
+
+        total_files = sum(len(item.get("files", [])) for item in items)
+        failures = [item for item in items if not item.get("success")]
+        success = len(failures) == 0
+
+        if success:
+            message = f"Downloaded {total_files} file(s) across {len(items)} {scope}"
+        else:
+            message = f"Completed with {len(failures)} failure(s); downloaded {total_files} file(s)"
+
+        return {
+            "success": success,
+            "message": message,
+            "items": items,
+            "files_downloaded": total_files
+        }
+
+    def download_studies(self, study_instance_uids: List[str], download_root: str) -> Dict[str, Any]:
+        """Download one or more studies via C-GET."""
+        if not study_instance_uids:
+            return {
+                "success": False,
+                "message": "At least one StudyInstanceUID must be provided",
+                "items": [],
+                "files_downloaded": 0
+            }
+
+        items = []
+        for study_uid in study_instance_uids:
+            ds = Dataset()
+            ds.QueryRetrieveLevel = "STUDY"
+            ds.StudyInstanceUID = study_uid
+
+            destination = os.path.join(download_root, "studies", study_uid)
+            result = self._retrieve_via_c_get(ds, destination)
+            result["study_instance_uid"] = study_uid
+            items.append(result)
+
+        return self._summarize_download_results(items, "studies")
+
+    def download_series(self, study_instance_uid: str, series_instance_uids: List[str], download_root: str) -> Dict[str, Any]:
+        """Download one or more series from a given study via C-GET."""
+        if not study_instance_uid:
+            return {
+                "success": False,
+                "message": "StudyInstanceUID is required",
+                "items": [],
+                "files_downloaded": 0
+            }
+
+        if not series_instance_uids:
+            return {
+                "success": False,
+                "message": "At least one SeriesInstanceUID must be provided",
+                "items": [],
+                "files_downloaded": 0
+            }
+
+        items = []
+        for series_uid in series_instance_uids:
+            ds = Dataset()
+            ds.QueryRetrieveLevel = "SERIES"
+            ds.StudyInstanceUID = study_instance_uid
+            ds.SeriesInstanceUID = series_uid
+
+            destination = os.path.join(download_root, "studies", study_instance_uid, "series", series_uid)
+            result = self._retrieve_via_c_get(ds, destination)
+            result["study_instance_uid"] = study_instance_uid
+            result["series_instance_uid"] = series_uid
+            items.append(result)
+
+        return self._summarize_download_results(items, "series")
+
+    def download_instances(
+        self,
+        study_instance_uid: str,
+        series_instance_uid: str,
+        download_root: str,
+        sop_instance_uids: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Download individual instances from a series via C-GET."""
+        if not study_instance_uid or not series_instance_uid:
+            return {
+                "success": False,
+                "message": "StudyInstanceUID and SeriesInstanceUID are required",
+                "items": [],
+                "files_downloaded": 0
+            }
+
+        items = []
+        target_root = os.path.join(download_root, "studies", study_instance_uid, "series", series_instance_uid)
+
+        if sop_instance_uids:
+            for sop_uid in sop_instance_uids:
+                ds = Dataset()
+                ds.QueryRetrieveLevel = "IMAGE"
+                ds.StudyInstanceUID = study_instance_uid
+                ds.SeriesInstanceUID = series_instance_uid
+                ds.SOPInstanceUID = sop_uid
+
+                result = self._retrieve_via_c_get(ds, target_root)
+                result["study_instance_uid"] = study_instance_uid
+                result["series_instance_uid"] = series_instance_uid
+                result["sop_instance_uid"] = sop_uid
+                items.append(result)
+        else:
+            ds = Dataset()
+            ds.QueryRetrieveLevel = "IMAGE"
+            ds.StudyInstanceUID = study_instance_uid
+            ds.SeriesInstanceUID = series_instance_uid
+
+            result = self._retrieve_via_c_get(ds, target_root)
+            result["study_instance_uid"] = study_instance_uid
+            result["series_instance_uid"] = series_instance_uid
+            items.append(result)
+
+        return self._summarize_download_results(items, "instances")
     
     @staticmethod
     def _dataset_to_dict(dataset: Dataset) -> Dict[str, Any]:

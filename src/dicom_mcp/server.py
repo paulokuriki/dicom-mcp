@@ -3,6 +3,7 @@ DICOM MCP Server main implementation.
 """
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Dict, List, Any, AsyncIterator
@@ -27,6 +28,15 @@ class DicomContext:
 def create_dicom_mcp_server(config_path: str, name: str = "DICOM MCP") -> FastMCP:
     """Create and configure a DICOM MCP server."""
     
+    def _download_root_from_config(config: DicomConfiguration) -> str:
+        """Resolve a writable download directory from configuration or default.
+        Does not mutate config; ensures directory exists and returns absolute path.
+        """
+        root = getattr(config, "download_directory", "./downloads")
+        root = os.path.abspath(os.path.expanduser(root))
+        os.makedirs(root, exist_ok=True)
+        return root
+
     # Define a simple lifespan function
     @asynccontextmanager
     async def lifespan(server: FastMCP) -> AsyncIterator[DicomContext]:
@@ -450,6 +460,47 @@ def create_dicom_mcp_server(config_path: str, name: str = "DICOM MCP") -> FastMC
             )
         except Exception as e:
             raise Exception(f"Error querying instances: {str(e)}")
+
+    @mcp.tool()
+    def download_studies(
+        study_instance_uids: List[str],
+        ctx: Context = None
+    ) -> Dict[str, Any]:
+        """Download one or more studies to a local download directory."""
+        dicom_ctx = ctx.request_context.lifespan_context
+        config = dicom_ctx.config
+        download_root = _download_root_from_config(config)
+        return dicom_ctx.client.download_studies(study_instance_uids, download_root)
+
+    @mcp.tool()
+    def download_series(
+        study_instance_uid: str,
+        series_instance_uids: List[str],
+        ctx: Context = None
+    ) -> Dict[str, Any]:
+        """Download specific series for a study to the local download directory."""
+        dicom_ctx = ctx.request_context.lifespan_context
+        config = dicom_ctx.config
+        download_root = _download_root_from_config(config)
+        return dicom_ctx.client.download_series(study_instance_uid, series_instance_uids, download_root)
+
+    @mcp.tool()
+    def download_instances(
+        study_instance_uid: str,
+        series_instance_uid: str,
+        sop_instance_uids: List[str] = None,
+        ctx: Context = None
+    ) -> Dict[str, Any]:
+        """Download instances for a given series (optionally filtering by SOP Instance UID)."""
+        dicom_ctx = ctx.request_context.lifespan_context
+        config = dicom_ctx.config
+        download_root = _download_root_from_config(config)
+        return dicom_ctx.client.download_instances(
+            study_instance_uid=study_instance_uid,
+            series_instance_uid=series_instance_uid,
+            download_root=download_root,
+            sop_instance_uids=sop_instance_uids,
+        )
         
     @mcp.tool()
     def move_series(
