@@ -12,3 +12,7 @@ todo
 
 # Editors
 .vscode
+
+# Local artifacts
+downloads/
+previous_code_with_download/

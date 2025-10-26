@@ -17,3 +17,6 @@ current_node: "orthanc"
 
 # Current calling AE title (single value)
 calling_aet: "MCPSCU"
+
+# Directory where downloaded studies will be stored
+download_directory: "/mnt/c/Users/paulo/PycharmProjects/rsna anonymizer/anonymizer/data/downloads"
