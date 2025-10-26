@@ -1,6 +1,6 @@
 ## Overview
 
-This is my fork of dicom-mcp focused on practical workflows: query metadata, move studies/series, extract PDF text, and now download DICOM exams locally. Credit to Christian Hinge for the original server; I’ve added the download tools and WSL‑friendly docs, tested with Claude Desktop.
+This is my fork of dicom-mcp focused on a simple, practical goal: query DICOM metadata, download exams, and prepare files for anonymization. Credit to Christian Hinge for the original server; I added the download tools and WSL‑friendly docs, tested with Claude Desktop.
 
 Key additions
 - Download tools: `download_studies`, `download_series`, `download_instances`
