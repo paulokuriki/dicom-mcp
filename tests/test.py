@@ -13,18 +13,18 @@ def main():
     
     # Get the current node and calling AE title
     node = config.nodes[config.current_node]
-    aet = config.calling_aet
+    calling_aet_title = config.calling_aet_title
     
     # Create client
     client = DicomClient(
         host=node.host,
         port=node.port,
-        calling_aet=aet.ae_title,
+        calling_aet=calling_aet_title,
         called_aet=node.ae_title
     )
     
     print(f"Created DICOM client for {node.host}:{node.port}")
-    print(f"Called AE: {node.ae_title}, Calling AE: {aet.ae_title}")
+    print(f"Called AE: {node.ae_title}, Calling AE: {calling_aet_title}")
     
     # Test connection
     success, message = client.verify_connection()
@@ -35,7 +35,11 @@ def main():
     
     # Query for patients
     print("\nQuerying patients...")
-    patients = client.query_patient()
+    patients_result = client.query_patient()
+    if not patients_result.get("success"):
+        print(f"Query failed: {patients_result.get('error')}")
+        return
+    patients = patients_result.get("results", [])
     if not patients:
         print("No patients found")
         return
@@ -46,7 +50,11 @@ def main():
     
     # Query for studies
     print("\nQuerying studies...")
-    studies = client.query_study(patient_id=patient_id)
+    studies_result = client.query_study(patient_id=patient_id)
+    if not studies_result.get("success"):
+        print(f"Query failed: {studies_result.get('error')}")
+        return
+    studies = studies_result.get("results", [])
     if not studies:
         print(f"No studies found for patient {patient_id}")
         return
@@ -57,7 +65,11 @@ def main():
     
     # Query for series
     print("\nQuerying series...")
-    series = client.query_series(study_instance_uid=study_uid)
+    series_result = client.query_series(study_instance_uid=study_uid)
+    if not series_result.get("success"):
+        print(f"Query failed: {series_result.get('error')}")
+        return
+    series = series_result.get("results", [])
     if not series:
         print(f"No series found for study {study_uid}")
         return
@@ -68,7 +80,11 @@ def main():
     
     # Query for instances
     print("\nQuerying instances...")
-    instances = client.query_instance(series_instance_uid=series_uid)
+    instances_result = client.query_instance(series_instance_uid=series_uid)
+    if not instances_result.get("success"):
+        print(f"Query failed: {instances_result.get('error')}")
+        return
+    instances = instances_result.get("results", [])
     if not instances:
         print(f"No instances found for series {series_uid}")
         return

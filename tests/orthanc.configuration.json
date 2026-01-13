@@ -64,6 +64,16 @@
         "AET": "MCPSCU",
         "Host": "host.docker.internal", 
         "Port": 11112
+      },
+      "RADIANT": {
+        "AET": "RADIANT",
+        "Host": "host.docker.internal",
+        "Port": 11112
+      },
+      "MONAI-DEPLOY": {
+        "AET": "MONAI-DEPLOY", 
+        "Host": "host.docker.internal",
+        "Port": 104
       }
     },
     "DicomModalitiesInDatabase": false,

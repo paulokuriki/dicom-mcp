@@ -1,100 +1,100 @@
-# Rapport 1: Initial Staging (01-03-2024)
+# Report 1: Initial Staging (01-03-2024)
 
-## Indikation
-Nydiagnosticeret diffust storcellet B-celle lymfom (DLBCL). PET/CT scanning til initial stadieinddeling før behandlingsstart.
+## Indication
+Newly diagnosed diffuse large B-cell lymphoma (DLBCL). PET/CT scan for initial staging before treatment.
 
-## Beskrivelse
-Der ses flere metabolisk aktive lymfeknuder i halsregionen bilateralt, mest udtalt på venstre side med SUVmax 14,3. Den største måler 2,8 x 1,9 cm.
+## Description
+Multiple metabolically active lymph nodes in the cervical region bilaterally, most pronounced on the left with SUVmax 14.3. The largest measures 2.8 x 1.9 cm.
 
-Multiple hypermetaboliske lymfeknuder i mediastinum, hvor den største i højre hilære region måler 3,5 x 2,7 cm med SUVmax 17,8.
+Multiple hypermetabolic lymph nodes in the mediastinum, with the largest in the right hilar region measuring 3.5 x 2.7 cm and SUVmax 17.8.
 
-Der ses flere metabolisk aktive lymfeknuder i abdomen, især para-aortisk og i mesenteriet. Den største para-aortiske lymfeknude måler 4,1 x 3,2 cm med SUVmax 19,5.
+Multiple metabolically active lymph nodes in the abdomen, especially para-aortic and mesenteric. The largest para-aortic node measures 4.1 x 3.2 cm with SUVmax 19.5.
 
-Milt med normal størrelse, men med flere fokale områder med forøget FDG-optag (SUVmax 11,6), forenelig med miltinvolvering.
+Spleen normal size, but with multiple focal areas of increased FDG uptake (SUVmax 11.6), consistent with splenic involvement.
 
-Ingen tegn på knoglemarvsinfiltration. Ingen andre patologiske FDG-optagelser i de undersøgte områder.
+No evidence of bone marrow infiltration. No other pathologic FDG uptake in the examined regions.
 
-## Konklusion
-PET/CT forenelig med diffust storcellet B-celle lymfom stadium III med involvering af lymfeknuder over og under diafragma samt miltinvolvering. Ann Arbor stadium: III-S.
-
----
-
-# Rapport 2: Interim Assessment 1 (05-05-2024)
-
-## Indikation
-DLBCL under behandling med R-CHOP. PET/CT scanning efter 2 behandlingsserier til vurdering af behandlingsrespons.
-
-## Beskrivelse
-Sammenlignet med tidligere undersøgelse (01-03-2024) ses betydelig reduktion i størrelse og metabolisk aktivitet af de tidligere beskrevne lymfeknuder i hals, mediastinum og abdomen.
-
-Halslymfeknuder er nu alle under 1 cm og med let øget FDG-optag (SUVmax 3,2).
-
-Mediastinale lymfeknuder er reducerede i størrelse, med den største nu på 1,8 x 1,2 cm og SUVmax 4,5.
-
-Para-aortiske lymfeknuder er reducerede i størrelse med den største nu på 2,1 x 1,5 cm og SUVmax 5,8.
-
-Miltens fokale områder med øget FDG-optag er nu mindre udtalt (SUVmax 3,9).
-
-## Konklusion
-God partiel respons på behandling med betydelig reduktion i både størrelse og metabolisk aktivitet af lymfom-manifestationer. Deauville score 3. Anbefales fortsat behandling ifølge protokol.
+## Conclusion
+PET/CT consistent with diffuse large B-cell lymphoma stage III with lymph node involvement above and below the diaphragm and splenic involvement. Ann Arbor stage: III-S.
 
 ---
 
-# Rapport 3: Interim Assessment 2 (10-07-2024)
+# Report 2: Interim Assessment 1 (05-05-2024)
 
-## Indikation
-DLBCL under behandling med R-CHOP. PET/CT scanning efter 4 behandlingsserier til vurdering af behandlingsrespons.
+## Indication
+DLBCL under treatment with R-CHOP. PET/CT scan after 2 treatment cycles to assess response.
 
-## Beskrivelse
-Sammenlignet med tidligere undersøgelse (05-05-2024) ses yderligere reduktion i størrelse og metabolisk aktivitet af de tidligere beskrevne lymfeknuder.
+## Description
+Compared with the prior study (01-03-2024), there is a significant reduction in size and metabolic activity of the previously described lymph nodes in the neck, mediastinum, and abdomen.
 
-Halslymfeknuder er ikke længere visuelt identificerbare som patologiske og viser ingen patologisk FDG-optag.
+Cervical lymph nodes are now all under 1 cm with mild increased FDG uptake (SUVmax 3.2).
 
-Mediastinale lymfeknuder er yderligere reducerede i størrelse, med kun en enkelt målelig lymfeknude på 1,1 x 0,8 cm og minimal FDG-optag (SUVmax 2,1) svarende til baggrundsaktivitet.
+Mediastinal lymph nodes are reduced in size, with the largest now 1.8 x 1.2 cm and SUVmax 4.5.
 
-Para-aortiske lymfeknuder nu alle under 1 cm og uden patologisk FDG-optag.
+Para-aortic lymph nodes are reduced in size, with the largest now 2.1 x 1.5 cm and SUVmax 5.8.
 
-Milten viser nu homogen FDG-fordeling uden fokale områder med øget optag.
+Splenic focal areas of increased FDG uptake are now less prominent (SUVmax 3.9).
 
-## Konklusion
-Meget god behandlingsrespons med næsten komplet metabolisk respons. Deauville score 2. Anbefales at fuldføre planlagt behandlingsforløb.
-
----
-
-# Rapport 4: Interim Assessment 3 (15-09-2024)
-
-## Indikation
-DLBCL under behandling med R-CHOP. PET/CT scanning efter 6 behandlingsserier til vurdering af behandlingsrespons.
-
-## Beskrivelse
-Sammenlignet med tidligere undersøgelse (10-07-2024) ses nu komplet normalisering af tidligere beskrevne patologiske fund.
-
-Ingen patologisk forstørrede lymfeknuder i hals, mediastinum eller abdomen.
-
-Alle tidligere involverede områder viser nu FDG-optag svarende til normal baggrundaktivitet.
-
-Milten er af normal størrelse og viser homogen FDG-fordeling.
-
-## Konklusion
-Komplet metabolisk respons på behandling. Deauville score 1. Ingen tegn på resterende aktivt lymfom.
+## Conclusion
+Good partial response to treatment with significant reduction in both size and metabolic activity of lymphoma manifestations. Deauville score 3. Continued treatment is recommended per protocol.
 
 ---
 
-# Rapport 5: End of Treatment (20-11-2024)
+# Report 3: Interim Assessment 2 (10-07-2024)
 
-## Indikation
-DLBCL efter afsluttet behandling med R-CHOP (6 serier + 2 serier rituximab). PET/CT scanning til vurdering af behandlingsrespons efter afsluttet behandling.
+## Indication
+DLBCL under treatment with R-CHOP. PET/CT scan after 4 treatment cycles to assess response.
 
-## Beskrivelse
-Sammenlignet med tidligere undersøgelse (15-09-2024) ses fortsat ingen tegn på resterende eller recidiverende lymfom.
+## Description
+Compared with the prior study (05-05-2024), there is further reduction in size and metabolic activity of the previously described lymph nodes.
 
-Ingen patologisk forstørrede lymfeknuder i hals, mediastinum eller abdomen.
+Cervical lymph nodes are no longer visually identifiable as pathologic and show no pathologic FDG uptake.
 
-Alle tidligere involverede områder viser fortsat FDG-optag svarende til normal baggrundaktivitet.
+Mediastinal lymph nodes are further reduced in size, with only a single measurable lymph node at 1.1 x 0.8 cm and minimal FDG uptake (SUVmax 2.1) consistent with background activity.
 
-Milten er af normal størrelse og viser homogen FDG-fordeling.
+Para-aortic lymph nodes are now all under 1 cm and without pathologic FDG uptake.
 
-Ingen nytilkomne patologiske fund.
+The spleen now shows homogeneous FDG distribution without focal areas of increased uptake.
 
-## Konklusion
-Komplet respons på behandling. Deauville score 1. Ingen tegn på resterende aktivt lymfom ved afsluttet behandling. Anbefales regelmæssig klinisk opfølgning ifølge afdelingens protokol.
+## Conclusion
+Very good treatment response with near-complete metabolic response. Deauville score 2. Completion of planned treatment is recommended.
+
+---
+
+# Report 4: Interim Assessment 3 (15-09-2024)
+
+## Indication
+DLBCL under treatment with R-CHOP. PET/CT scan after 6 treatment cycles to assess response.
+
+## Description
+Compared with the prior study (10-07-2024), there is now complete normalization of previously described pathologic findings.
+
+No pathologically enlarged lymph nodes in the neck, mediastinum, or abdomen.
+
+All previously involved areas now show FDG uptake consistent with normal background activity.
+
+The spleen is normal size and shows homogeneous FDG distribution.
+
+## Conclusion
+Complete metabolic response to treatment. Deauville score 1. No evidence of residual active lymphoma.
+
+---
+
+# Report 5: End of Treatment (20-11-2024)
+
+## Indication
+DLBCL after completed treatment with R-CHOP (6 cycles + 2 cycles rituximab). PET/CT scan to assess response after treatment completion.
+
+## Description
+Compared with the prior study (15-09-2024), there continues to be no evidence of residual or recurrent lymphoma.
+
+No pathologically enlarged lymph nodes in the neck, mediastinum, or abdomen.
+
+All previously involved areas continue to show FDG uptake consistent with normal background activity.
+
+The spleen is normal size and shows homogeneous FDG distribution.
+
+No new pathologic findings.
+
+## Conclusion
+Complete response to treatment. Deauville score 1. No evidence of residual active lymphoma after treatment completion. Regular clinical follow-up is recommended per departmental protocol.

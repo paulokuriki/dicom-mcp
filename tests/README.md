@@ -7,21 +7,27 @@ A minimal test environment for testing DICOM Model Context Protocol server with 
 1. Start Orthanc DICOM server with Docker Compose:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
-2. Install test dependencies:
+2. Install dev dependencies from the repo root:
 
 ```bash
-uv pip install -r pyproject.toml --extra dev
+uv pip install -e ".[dev]"
 ```
 
 ## Running Tests
 
-Run tests using pytest:
+Run unit tests using pytest:
 
 ```bash
-pytest test_dicom_mcp.py
+uv run pytest -m "not integration"
+```
+
+Run integration tests using pytest:
+
+```bash
+uv run pytest -m integration
 ```
 
 ## Test Environment
@@ -56,3 +62,10 @@ For the DICOM MCP server:
    - query_series
    - query_instances
    - get_attribute_presets
+   - download_studies
+   - download_series
+   - download_instances
+   - extract_pdf_text_from_dicom
+   - move_series
+   - move_study
+   - get_manifest

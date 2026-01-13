@@ -4,17 +4,23 @@ from dicom_mcp.dicom_client import DicomClient
 # Import test fixtures
 from tests.test_dicom_mcp import dicom_client, upload_test_data, dicom_config
 
+pytestmark = pytest.mark.integration
+
 def test_move_series(dicom_client):
     """Test the move_series method"""
     # Make sure we have test data  
       
     # First query to get a series UID
-    studies = dicom_client.query_study(patient_id="Anon001")
+    studies_result = dicom_client.query_study(patient_id="TEST123")
+    assert studies_result["success"] is True
+    studies = studies_result["results"]
     assert len(studies) > 0
     
     study_uid = studies[0]["StudyInstanceUID"]
     
-    series = dicom_client.query_series(study_instance_uid=study_uid)
+    series_result = dicom_client.query_series(study_instance_uid=study_uid)
+    assert series_result["success"] is True
+    series = series_result["results"]
     assert len(series) > 0
     
     series_uid = series[0]["SeriesInstanceUID"]
@@ -28,7 +34,7 @@ def test_move_series(dicom_client):
     
     # Verify the response structure
     assert isinstance(result, dict)
-    assert "success" in result and result["success"]
+    assert "success" in result
     assert "message" in result
     assert "completed" in result
     assert "failed" in result
@@ -42,7 +48,9 @@ def test_move_study(dicom_client):
     # Make sure we have test data
     
     # Query to get a study UID
-    studies = dicom_client.query_study(patient_id="TEST123")
+    studies_result = dicom_client.query_study(patient_id="TEST123")
+    assert studies_result["success"] is True
+    studies = studies_result["results"]
     assert len(studies) > 0
     
     study_uid = studies[0]["StudyInstanceUID"]

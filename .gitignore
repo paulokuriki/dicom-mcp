@@ -16,3 +16,4 @@ todo
 # Local artifacts
 downloads/
 previous_code_with_download/
+.DS_Store

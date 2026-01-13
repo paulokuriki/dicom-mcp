@@ -1,6 +1,6 @@
 ## Overview
 
-This is my fork of dicom-mcp focused on a simple, practical goal: query DICOM metadata, download exams, and prepare files for anonymization. Credit to Christian Hinge for the original server; I added the download tools and WSL‑friendly docs, tested with Claude Desktop.
+This is my fork of dicom-mcp focused on a simple, practical goal: query DICOM metadata, download exams, and prepare files for anonymization. Credit to Christian Hinge for the original server; I added the download tools, tested with Claude Desktop.
 
 Key additions
 - Download tools: `download_studies`, `download_series`, `download_instances`
@@ -11,7 +11,7 @@ Repo credit: https://github.com/ChristianHinge/dicom-mcp
 
 ## Run it
 
-- Minimal config (configuration.yaml):
+- Minimal config (configs/dicom.yaml):
 ```
 nodes:
   orthanc:
@@ -19,20 +19,48 @@ nodes:
     port: 4242
     ae_title: "ORTHANC"
     description: "Default Local Orthanc DICOM server"
+    aliases: ["local", "dev-orthanc"]
 
   radiant:
     host: "localhost"
     port: 11112
     ae_title: "RADIANT"
     description: "Radiant Viewer Dicom Node"
+    aliases: ["viewer"]
 
 current_node: "orthanc"
-calling_aet: "MCPSCU"
+
+calling_aets:
+  default:
+    ae_title: "MCPSCU"
+    description: "Default calling AE"
+
+calling_aet: "default"
+query_retrieve_root: "study"
+
+network:
+  acse_timeout: 10
+  dimse_timeout: 30
+  network_timeout: 30
+  assoc_timeout: 10
+  max_pdu: 16384
+  storage_contexts: "all"
+  retry:
+    max_attempts: 2
+    backoff_seconds: 1.0
+    backoff_multiplier: 2.0
+    backoff_max_seconds: 5.0
+
+storage:
+  path: "./downloads"
+  retention_days: 30
+  dir_permissions: "0o700"
+  file_permissions: "0o600"
 ```
 
 - Start server (dev):
 ```
-uv run --with-editable '.' -m dicom_mcp configuration.yaml
+uv run --with-editable '.' -m dicom_mcp ../configs/dicom.yaml
 ```
 - If uv caches old code: add `--no-cache` or `--reinstall-package dicom-mcp`.
 
@@ -49,7 +77,7 @@ uv run --with-editable '.' -m dicom_mcp configuration.yaml
         "--",
         "bash",
         "-lc",
-        "cd '/mnt/c/Users/paulo/Python Projects/dicom-mcp' && uv run --with-editable '.' python -m dicom_mcp '/mnt/c/Users/paulo/Python Projects/dicom-mcp/configuration.yaml'"
+        "cd '/mnt/c/Users/paulo/Python Projects/dicom-mcp' && uv run --with-editable '.' python -m dicom_mcp '/mnt/c/Users/paulo/Python Projects/configs/dicom.yaml'"
       ]
     }
   },
@@ -61,22 +89,39 @@ uv run --with-editable '.' -m dicom_mcp configuration.yaml
 ```
 
 WSL tips
-- Enable mirrored networking so `localhost` works for both Windows and WSL (see `docs/claude-wsl-setup.md`).
+- Enable mirrored networking so `localhost` works for both Windows and WSL.
 - Use `--with-editable '.'` so your code changes are seen live.
 
 ## Tools you can call
 
-- Connection: `list_dicom_nodes`, `switch_dicom_node`, `verify_connection`
+- Connection: `list_dicom_nodes`, `switch_dicom_node`, `switch_calling_aet`, `verify_connection`
+- Registry: `get_manifest`
 - Query: `query_patients`, `query_studies`, `query_series`, `query_instances`, `get_attribute_presets`
 - Transfer: `move_study`, `move_series`
 - Downloads (this fork): `download_studies`, `download_series`, `download_instances`
 - Reports: `extract_pdf_text_from_dicom`
+
+Query tools return structured status metadata:
+```json
+{
+  "success": true,
+  "results": [],
+  "dicom_statuses": [],
+  "warnings": [],
+  "error": null
+}
+```
 
 ## Examples
 
 - Find studies in a date range:
 ```
 query_studies(study_date="20230101-20231231")
+```
+
+- Filter studies by patient attributes:
+```
+query_studies(patient_name="*TEST*", patient_sex="O", patient_birth_date="19700101")
 ```
 
 - Download two studies to `./downloads`:
@@ -93,18 +138,23 @@ extract_pdf_text_from_dicom(
   study_instance_uid="...",
   series_instance_uid="...",
   sop_instance_uid="...",
+  keep_files=True,
 )
 ```
+The response includes `pdf_metadata` with page count, PDF size, and whether extracted text was empty.
 
 ## Downloads → anonymization
 
-Files are saved to `./downloads` by default. This enables later anonymization/de‑identification. If you want a custom destination, add a `download_directory` key in your YAML and point the server helper to it.
+Files are saved to `./downloads` by default. Configure `storage.path` to change the root (legacy `download_directory` is still supported).
+`storage.retention_days` cleans old files on startup (set to `0` to disable), and `storage.dir_permissions`/`storage.file_permissions` control permissions.
+Downloads are organized as `downloads/studies/<StudyInstanceUID>/series/<SeriesInstanceUID>/...`, each with a `manifest.json` containing UIDs, file paths, timestamps, and source node metadata.
+PDF extraction uses temporary files by default; set `keep_files=True` to persist them under `./downloads/reports/<sop_uid>_<timestamp>`.
 
 ## Troubleshooting
 
 - If downloads fail with association errors, ensure the server allows C‑GET/C‑STORE back to this AE.
 - If uv doesn’t reflect code changes, add `--no-cache` or `--reinstall-package dicom-mcp`.
-- On WSL/Windows, enable mirrored networking (see `docs/claude-wsl-setup.md`).
+- On WSL/Windows, enable mirrored networking so `localhost` works across Windows and WSL.
 
 ## License & credit
 
@@ -156,23 +206,24 @@ The `dicom-mcp` server enables AI assistants to query, read, and move data on DI
 
 ## 🚀 Quick Start
 ### 📥 Installation
-Install using uv or pip:
+Install using uv:
 
 ```bash
 uv tool install dicom-mcp
 ```
+
 Or by cloning the repository:
 
 ```bash
 # Clone and set up development environment
 git clone https://github.com/ChristianHinge/dicom-mcp
-cd dicom mcp
+cd dicom-mcp
 
 # Create and activate virtual environment
 uv venv
 source .venv/bin/activate
 
-# Install with test dependencies
+# Install with dev dependencies
 uv pip install -e ".[dev]"
 ```
 
@@ -188,24 +239,62 @@ nodes:
     port: 4242 
     ae_title: "ORTHANC"
     description: "Local Orthanc DICOM server"
+    aliases: ["local", "dev-orthanc"]
 
 current_node: "main"
-calling_aet: "MCPSCU" 
+
+calling_aets:
+  default:
+    ae_title: "MCPSCU"
+    description: "Default calling AE"
+
+calling_aet: "default"
+query_retrieve_root: "study"
+
+network:
+  acse_timeout: 10
+  dimse_timeout: 30
+  network_timeout: 30
+  assoc_timeout: 10
+  max_pdu: 16384
+  storage_contexts: "all"
+  retry:
+    max_attempts: 2
+    backoff_seconds: 1.0
+    backoff_multiplier: 2.0
+    backoff_max_seconds: 5.0
+
+storage:
+  path: "./downloads"
+  retention_days: 30
+  dir_permissions: "0o700"
+  file_permissions: "0o600"
 ```
+Notes:
+- `calling_aet` can be a name, alias, or AE title defined in `calling_aets`.
+- `query_retrieve_root` accepts `study` or `patient`.
+- `network.storage_contexts` supports `all` (default) or `core` for common modalities.
 > [!WARNING]
 DICOM-MCP is not meant for clinical use, and should not be connected with live hospital databases or databases with patient-sensitive data. Doing so could lead to both loss of patient data, and leakage of patient data onto the internet. DICOM-MCP can be used with locally hosted open-weight LLMs for complete data privacy. 
 
 ### (Optional) Sample ORTHANC server
 If you don't have a DICOM server available, you can run a local ORTHANC server using Docker:
 
-Clone the repository and install test dependencies `pip install -e ".[dev]`
+Clone the repository and install test dependencies:
+
+```bash
+uv pip install -e ".[dev]"
+```
+
+Start Orthanc and run tests:
 
 ```bash
 cd tests
-docker ocmpose up -d
+docker compose up -d
 cd ..
-pytest # uploads dummy pdf data to ORTHANC server
+uv run pytest -m integration  # uploads dummy pdf data to ORTHANC server
 ```
+
 UI at [http://localhost:8042](http://localhost:8042)
 
 ### 🔌 MCP Integration
@@ -245,7 +334,7 @@ For development:
 
 ## 🛠️ Tools Overview
 
-`dicom-mcp` provides four categories of tools for interaction with DICOM servers and DICOM data. 
+`dicom-mcp` provides five categories of tools for interaction with DICOM servers and DICOM data. 
 
 ### 🔍 Query Metadata
 
@@ -262,12 +351,20 @@ For development:
 * **`move_series`**: Send a specific DICOM series to another configured DICOM node using C-MOVE.
 * **`move_study`**: Send an entire DICOM study to another configured DICOM node using C-MOVE.
 
+### 📥 Downloads
+
+* **`download_studies`**: Download one or more studies to the local storage root.
+* **`download_series`**: Download one or more series within a study.
+* **`download_instances`**: Download specific instances within a series.
+
 ### ⚙️ Utilities
 
-* **`list_dicom_nodes`**: Show the currently active DICOM node and list all configured nodes.
+* **`list_dicom_nodes`**: Show the currently active DICOM node, calling AE title, and list all configured nodes.
 * **`switch_dicom_node`**: Change the active DICOM node for subsequent operations.
+* **`switch_calling_aet`**: Change the calling AE title used for new associations.
 * **`verify_connection`**: Test the DICOM network connection to the currently active node using C-ECHO.
 * **`get_attribute_presets`**: List the available levels of detail (minimal, standard, extended) for metadata query results.<p>
+* **`get_manifest`**: Return the MCP tool contract manifest (required/optional tool versions).
 
 
 ### Example interaction
@@ -282,26 +379,33 @@ The tools can be chained together to answer complex questions:
 ## 📈 Contributing
 ### Running Tests
 
-Tests require a running Orthanc DICOM server. You can use Docker:
+Unit tests run without Orthanc; integration tests require a running Orthanc DICOM server. You can use Docker:
 
 ```bash
 # Navigate to the directory containing docker-compose.yml (e.g., tests/)
 cd tests
-docker-compose up -d
+docker compose up -d
 ```
 
-Run tests using pytest:
+Run unit tests using uv:
 
 ```bash
 # From the project root directory
-pytest
+uv run pytest -m "not integration"
+```
+
+Run integration tests using uv:
+
+```bash
+# From the project root directory
+uv run pytest -m integration
 ```
 
 Stop the Orthanc container:
 
 ```bash
 cd tests
-docker-compose down
+docker compose down
 ```
 
 ### Debugging
@@ -312,7 +416,30 @@ Use the MCP Inspector for debugging the server communication:
 npx @modelcontextprotocol/inspector uv run dicom-mcp /path/to/your_config.yaml --transport stdio
 ```
 
+### Logging
+
+Set `LOG_LEVEL` to control verbosity (e.g., `DEBUG`, `INFO`, `WARNING`):
+
+```bash
+LOG_LEVEL=DEBUG uv run dicom-mcp /path/to/your_config.yaml --transport stdio
+```
+
+### Linting, formatting, type checking
+
+```bash
+uv run ruff check .
+uv run ruff format .
+uv run pyright
+```
+
+### Pre-commit
+
+```bash
+uv run pre-commit install
+uv run pre-commit run --all-files
+```
+
 ## 🙏 Acknowledgments
 
 * Built using [pynetdicom](https://github.com/pydicom/pynetdicom)
-* Uses [PyPDF2](https://pypi.org/project/PyPDF2/) for PDF text extraction
+* Uses [pypdf](https://pypi.org/project/pypdf/) for PDF text extraction

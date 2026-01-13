@@ -43,6 +43,9 @@ ATTRIBUTE_PRESETS = {
         "study": [
             "StudyInstanceUID",
             "PatientID",
+            "PatientName",
+            "PatientBirthDate",
+            "PatientSex",
             "StudyDate",
             "StudyTime",
             "StudyDescription",
@@ -91,6 +94,9 @@ ATTRIBUTE_PRESETS = {
         "study": [
             "StudyInstanceUID",
             "PatientID",
+            "PatientName",
+            "PatientBirthDate",
+            "PatientSex",
             "StudyDate",
             "StudyTime",
             "StudyDescription",

@@ -13,6 +13,8 @@ from pynetdicom.sop_class import Verification
 from dicom_mcp.config import DicomConfiguration, load_config
 from dicom_mcp.dicom_client import DicomClient
 
+pytestmark = pytest.mark.integration
+
         
 # Configuration
 ORTHANC_HOST = os.environ.get("ORTHANC_HOST", "localhost")
@@ -32,7 +34,7 @@ def dicom_config():
 def dicom_client(dicom_config):
     """Create a DICOM client from configuration."""
     node = dicom_config.nodes[dicom_config.current_node]
-    aet = dicom_config.calling_aet
+    aet = dicom_config.calling_aet_title
     
     client = DicomClient(
         host=node.host,
@@ -221,12 +223,14 @@ def test_query_patients(dicom_client):
     result = dicom_client.query_patient()
     
     assert result is not None
-    assert isinstance(result, list)
-    assert len(result) > 0, "No patients found"
+    assert isinstance(result, dict)
+    assert result["success"] is True
+    patients = result["results"]
+    assert len(patients) > 0, "No patients found"
     
     # Verify the test patient
     patient_found = False
-    for patient in result:
+    for patient in patients:
         if patient.get("PatientID") == "TEST123":
             patient_found = True
             break
@@ -236,68 +240,90 @@ def test_query_patients(dicom_client):
 
 def test_query_studies(dicom_client):
     """Test query_studies using the DICOM client directly"""
-    result = dicom_client.query_study(patient_id="TEST123")
-    
+    study_uid = _get_test_study_uid(dicom_client)
+    assert study_uid is not None
+
+
+def test_query_studies_patient_filters(dicom_client):
+    """Test query_studies with patient-level filters"""
+    result = dicom_client.query_study(
+        patient_name="*TEST*",
+        patient_sex="O",
+        patient_birth_date="19700101",
+    )
+
     assert result is not None
-    assert isinstance(result, list)
-    assert len(result) > 0, "No studies found"
-    
-    # Verify the test study
-    study_found = False
-    study_uid = None
-    
-    for study in result:
-        if study.get("StudyID") == "TEST01":
-            study_found = True
-            study_uid = study.get("StudyInstanceUID")
-            break
-    
-    assert study_found, "Test study not found"
-    return study_uid
+    assert isinstance(result, dict)
+    assert result["success"] is True
+    studies = result["results"]
+    assert len(studies) > 0, "No studies found with patient filters"
+
+    study_found = any(study.get("StudyID") == "TEST01" for study in studies)
+    assert study_found, "Test study not found with patient filters"
 
 
 def test_query_series(dicom_client):
     """Test query_series using the DICOM client directly"""
-    study_uid = test_query_studies(dicom_client)
-    
-    result = dicom_client.query_series(study_instance_uid=study_uid)
-    
-    assert result is not None
-    assert isinstance(result, list)
-    assert len(result) > 0, "No series found"
-    
-    # Verify the test series
-    series_found = False
-    series_uid = None
-    
-    for series in result:
-        if series.get("SeriesNumber") == 1:
-            series_found = True
-            series_uid = series.get("SeriesInstanceUID")
-            break
-    
-    assert series_found, "Test series not found"
-    return series_uid
+    series_uid = _get_test_series_uid(dicom_client)
+    assert series_uid is not None
 
 
 def test_query_instances(dicom_client):
     """Test query_instances using the DICOM client directly"""
-    series_uid = test_query_series(dicom_client)
-    
+    series_uid = _get_test_series_uid(dicom_client)
     result = dicom_client.query_instance(series_instance_uid=series_uid)
     
     assert result is not None
-    assert isinstance(result, list)
-    assert len(result) > 0, "No instances found"
+    assert isinstance(result, dict)
+    assert result["success"] is True
+    instances = result["results"]
+    assert len(instances) > 0, "No instances found"
     
     # Verify the test instance
     instance_found = False
-    for instance in result:
+    for instance in instances:
         if instance.get("InstanceNumber") == 1:
             instance_found = True
             break
     
     assert instance_found, "Test instance not found"
+
+
+def _get_test_study_uid(dicom_client: DicomClient) -> str:
+    result = dicom_client.query_study(patient_id="TEST123")
+
+    assert result is not None
+    assert isinstance(result, dict)
+    assert result["success"] is True
+    studies = result["results"]
+    assert len(studies) > 0, "No studies found"
+
+    for study in studies:
+        if study.get("StudyID") == "TEST01":
+            study_uid = study.get("StudyInstanceUID")
+            assert study_uid is not None
+            return study_uid
+
+    raise AssertionError("Test study not found")
+
+
+def _get_test_series_uid(dicom_client: DicomClient) -> str:
+    study_uid = _get_test_study_uid(dicom_client)
+    result = dicom_client.query_series(study_instance_uid=study_uid)
+
+    assert result is not None
+    assert isinstance(result, dict)
+    assert result["success"] is True
+    series_list = result["results"]
+    assert len(series_list) > 0, "No series found"
+
+    for series in series_list:
+        if series.get("SeriesNumber") == 1:
+            series_uid = series.get("SeriesInstanceUID")
+            assert series_uid is not None
+            return series_uid
+
+    raise AssertionError("Test series not found")
 
 
 def test_get_attribute_presets():
@@ -327,18 +353,16 @@ def test_create_server():
                     "description": "Test node"
                 }
             },
-            "calling_aets": {
-                "default": {
-                    "ae_title": "TESTCLIENT",
-                    "description": "Test client"
-                }
-            },
             "current_node": "test",
-            "calling_aet": "default"
+            "calling_aet": "TESTCLIENT"
         }
         yaml.dump(config, temp)
         temp.flush()
-        
+
+        loaded = load_config(temp.name)
+        assert loaded.current_node == "test"
+        assert loaded.calling_aet_title == "TESTCLIENT"
+
         # Should create a server without error
         server = create_dicom_mcp_server(temp.name)
         assert server is not None

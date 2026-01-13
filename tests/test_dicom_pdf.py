@@ -1,6 +1,7 @@
 """
 Test extracting text from PDFs encapsulated in DICOM.
 """
+import inspect
 import io
 import os
 import tempfile
@@ -19,6 +20,8 @@ from tests.test_dicom_mcp import (
     ORTHANC_USERNAME, ORTHANC_PASSWORD, dicom_config, dicom_client,
     wait_for_orthanc
 )
+
+pytestmark = pytest.mark.integration
 
 # Helper function to wait for Orthanc
 def wait_for_orthanc():
@@ -106,7 +109,7 @@ def upload_pdf_dicom():
         markdown_content = file.read()
     
     # Split the content into individual reports
-    reports = re.split(r'(?=# Rapport \d+:)', markdown_content)
+    reports = re.split(r'(?=# Report \d+:)', markdown_content)
     reports = [r for r in reports if r.strip()]  # Remove empty reports
     
     # Base study UID prefix - each report will get a unique study UID
@@ -149,7 +152,7 @@ def upload_pdf_dicom():
         ds.StudyID = f"DLBCL{i}"
         
         # Extract title for study description
-        title_match = re.search(r'# Rapport \d+: (.*?)[\n\r]', report_text)
+        title_match = re.search(r'# Report \d+: (.*?)[\n\r]', report_text)
         if title_match:
             ds.StudyDescription = f"PET/CT - {title_match.group(1)}"
         else:
@@ -174,7 +177,14 @@ def upload_pdf_dicom():
         
         # Save to file
         with tempfile.NamedTemporaryFile(suffix='.dcm', delete=False) as temp:
-            ds.save_as(temp.name, write_like_original=False)
+            try:
+                sig = inspect.signature(ds.save_as)
+            except (TypeError, ValueError):
+                sig = None
+            if sig and "enforce_file_format" in sig.parameters:
+                ds.save_as(temp.name, enforce_file_format=True)
+            else:
+                ds.save_as(temp.name, write_like_original=False)
             temp_path = temp.name
         
         try:
