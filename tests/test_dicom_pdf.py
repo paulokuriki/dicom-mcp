@@ -23,15 +23,6 @@ from tests.test_dicom_mcp import (
 
 pytestmark = pytest.mark.integration
 
-# Helper function to wait for Orthanc
-def wait_for_orthanc():
-    """Check if Orthanc is available"""
-    try:
-        response = requests.get(f"http://{ORTHANC_HOST}:{ORTHANC_WEB_PORT}/system")
-        return response.status_code == 200
-    except:
-        return False
-
 def parse_date_from_report(date_string):
     """Parse dates from report format (DD-MM-YYYY) to DICOM format (YYYYMMDD)"""
     # Extract date in DD-MM-YYYY format and convert to YYYYMMDD

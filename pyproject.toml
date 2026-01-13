@@ -1,7 +1,7 @@
 [project]
 name = "dicom-mcp"
 version = "0.1.1"
-description = "Add your description here"
+description = "MCP server for querying DICOM metadata, moving studies, and downloading exams"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -44,3 +44,8 @@ typeCheckingMode = "basic"
 include = ["src"]
 reportMissingImports = false
 reportMissingTypeStubs = false
+
+[tool.pytest.ini_options]
+markers = [
+    "integration: tests that require external services",
+]
