@@ -198,11 +198,18 @@ def register_transfer_tools(mcp: FastMCP, deps: ToolDependencies) -> None:
         """Move a DICOM series to another DICOM node.
 
         This tool transfers a specific series from the current DICOM server to a
-        destination DICOM node.
+        destination DICOM node. It requires a specific SeriesInstanceUID obtained
+        from a prior query_series() call.
+
+        NOTE: This tool does NOT accept search filters (modality, description, etc.).
+        To move series matching criteria, first use query_series() to find matching UIDs,
+        then call move_series() for each result.
 
         Args:
             destination_node: Name of the destination node as defined in the configuration
+                (case-insensitive, e.g., "radiant" or "RADIANT")
             series_instance_uid: The unique identifier for the series to be moved
+                (required, obtained from query_series results)
             study_instance_uid: Optional study identifier for stricter PACS requirements
 
         Returns:
@@ -224,10 +231,26 @@ def register_transfer_tools(mcp: FastMCP, deps: ToolDependencies) -> None:
         """
         dicom_ctx = ctx.request_context.lifespan_context
         config = dicom_ctx.config
+
+        # Validate series_instance_uid is provided
+        if not series_instance_uid or not series_instance_uid.strip():
+            return deps.tool_error_response(
+                "move_series",
+                config,
+                DicomOperationError(
+                    "series_instance_uid is required. This tool moves a single series by UID. "
+                    "To move series matching search criteria, first call query_series() "
+                    "with your filters, then call move_series() for each result's SeriesInstanceUID."
+                ),
+            )
+
         client = deps.create_client(config)
 
+        # Normalize node name for case-insensitive lookup
+        node_key = destination_node.lower()
+
         # Check if destination node exists
-        if destination_node not in config.nodes:
+        if node_key not in config.nodes:
             return deps.tool_error_response(
                 "move_series",
                 config,
@@ -237,7 +260,7 @@ def register_transfer_tools(mcp: FastMCP, deps: ToolDependencies) -> None:
             )
 
         # Get the destination AE title
-        destination_ae = config.nodes[destination_node].ae_title
+        destination_ae = config.nodes[node_key].ae_title
 
         # Execute the move operation
         try:
@@ -268,11 +291,18 @@ def register_transfer_tools(mcp: FastMCP, deps: ToolDependencies) -> None:
         """Move a DICOM study to another DICOM node.
 
         This tool transfers an entire study from the current DICOM server to a
-        destination DICOM node.
+        destination DICOM node. It requires a specific StudyInstanceUID obtained
+        from a prior query_studies() call.
+
+        NOTE: This tool does NOT accept search filters (modality, date range, description).
+        To move studies matching criteria, first use query_studies() to find matching UIDs,
+        then call move_study() for each result.
 
         Args:
             destination_node: Name of the destination node as defined in the configuration
+                (case-insensitive, e.g., "radiant" or "RADIANT")
             study_instance_uid: The unique identifier for the study to be moved
+                (required, obtained from query_studies results)
 
         Returns:
             Dictionary containing:
@@ -293,10 +323,26 @@ def register_transfer_tools(mcp: FastMCP, deps: ToolDependencies) -> None:
         """
         dicom_ctx = ctx.request_context.lifespan_context
         config = dicom_ctx.config
+
+        # Validate study_instance_uid is provided
+        if not study_instance_uid or not study_instance_uid.strip():
+            return deps.tool_error_response(
+                "move_study",
+                config,
+                DicomOperationError(
+                    "study_instance_uid is required. This tool moves a single study by UID. "
+                    "To move studies matching search criteria, first call query_studies() "
+                    "with your filters, then call move_study() for each result's StudyInstanceUID."
+                ),
+            )
+
         client = deps.create_client(config)
 
+        # Normalize node name for case-insensitive lookup
+        node_key = destination_node.lower()
+
         # Check if destination node exists
-        if destination_node not in config.nodes:
+        if node_key not in config.nodes:
             return deps.tool_error_response(
                 "move_study",
                 config,
@@ -306,7 +352,7 @@ def register_transfer_tools(mcp: FastMCP, deps: ToolDependencies) -> None:
             )
 
         # Get the destination AE title
-        destination_ae = config.nodes[destination_node].ae_title
+        destination_ae = config.nodes[node_key].ae_title
 
         # Execute the move operation
         try:

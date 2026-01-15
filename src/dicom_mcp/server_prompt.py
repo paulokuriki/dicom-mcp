@@ -97,12 +97,36 @@ get_attribute_presets()
 ```
 
 ## Study/Series Transfer
-Move DICOM objects to a configured destination DICOM node:
+Move DICOM objects to a configured destination DICOM node.
+
+**IMPORTANT**: `move_study` and `move_series` require a specific UID. They do NOT accept
+search filters. You must FIRST query for matching studies/series, THEN move each result.
+
+### Correct Workflow (Query then Move):
 ```
-# Move a whole study
+# Step 1: Query for studies matching your criteria
+results = query_studies(
+    study_date="20000101-20221231",
+    modality_in_study="CT",
+    study_description="*CHEST*"
+)
+
+# Step 2: Move each matching study by its StudyInstanceUID
+for study in results:
+    move_study(
+        destination_node="radiant",
+        study_instance_uid=study["StudyInstanceUID"]
+    )
+```
+
+### Move Tool Signatures:
+```
+# Move a whole study (requires StudyInstanceUID from query)
 move_study(destination_node="radiant", study_instance_uid="1.2.840...")
 
-# Move a single series
+# Move a single series (requires SeriesInstanceUID from query)
 move_series(destination_node="radiant", series_instance_uid="1.2.840...")
 ```
+
+Node names are case-insensitive (e.g., "RADIANT", "radiant", "Radiant" all work).
 """

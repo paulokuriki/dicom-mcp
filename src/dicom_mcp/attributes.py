@@ -154,6 +154,33 @@ ATTRIBUTE_PRESETS = {
             "BitsStored",
         ],
     },
+    
+    "custom": {
+        "patient": [],
+        
+        "study": [
+            "StudyInstanceUID",
+            "AccessionNumber",
+            "StudyDescription",
+            "PatientBirthDate",
+            "PatientSex",
+            "PatientAge",
+            "StudyDate",
+            "RequestedProcedureDescription",
+            "RequestedProcedureCodeSequence",
+        ],
+        
+        "series": [
+            "SeriesInstanceUID",
+            "Modality",
+            "SeriesDescription",
+            "BodyPartExamined",
+            "ProtocolName",
+            "RequestAttributesSequence",
+        ],
+        
+        "instance": [],
+    },
 }
 
 

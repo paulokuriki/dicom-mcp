@@ -146,8 +146,11 @@ def register_core_tools(mcp: FastMCP, deps: ToolDependencies, server_name: str) 
             )
         )
 
+        # Normalize node name for case-insensitive lookup
+        node_key = node_name.lower()
+
         # Check if node exists
-        if node_name not in config.nodes:
+        if node_key not in config.nodes:
             return deps.tool_error_response(
                 "switch_dicom_node",
                 config,
@@ -155,7 +158,7 @@ def register_core_tools(mcp: FastMCP, deps: ToolDependencies, server_name: str) 
             )
 
         # Update configuration
-        config.current_node = node_name
+        config.current_node = node_key
 
         return {
             "success": True,
