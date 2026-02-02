@@ -1,0 +1,10 @@
+nodes:
+  orthanc:
+    host: "orthanc"
+    port: 4242
+    ae_title: "ORTHANC"
+    description: "Orthanc DICOM server (Docker)"
+
+current_node: "orthanc"
+calling_aet: "MCPSCU"
+download_directory: "/app/downloads"

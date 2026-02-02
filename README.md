@@ -64,6 +64,100 @@ WSL tips
 - Enable mirrored networking so `localhost` works for both Windows and WSL (see `docs/claude-wsl-setup.md`).
 - Use `--with-editable '.'` so your code changes are seen live.
 
+## Docker Compose deployment (with n8n + Orthanc)
+
+You can run dicom-mcp as a containerized SSE server alongside Orthanc and n8n.
+
+### 1. Add the service to your docker-compose.yaml
+
+```yaml
+  dicom-mcp:
+    build:
+      context: ./dicom-mcp
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./dicom-mcp/configuration.docker.yaml:/app/configuration.yaml:ro
+      - ./dicom_downloads:/app/downloads
+    depends_on:
+      - orthanc
+```
+
+Adjust `context: ./dicom-mcp` to the path of this repo relative to your docker-compose file.
+
+### 2. Docker configuration
+
+The included `configuration.docker.yaml` uses the Docker service name `orthanc` as the DICOM host:
+
+```yaml
+nodes:
+  orthanc:
+    host: "orthanc"
+    port: 4242
+    ae_title: "ORTHANC"
+    description: "Orthanc DICOM server (Docker)"
+
+current_node: "orthanc"
+calling_aet: "MCPSCU"
+download_directory: "/app/downloads"
+```
+
+### 3. Orthanc modality registration
+
+If your `orthanc.json` has `DicomCheckModalityHost` set to `true`, add the MCP SCU as a known modality so Orthanc accepts its associations:
+
+```json
+"DicomModalities": {
+  "MCPSCU": {
+    "AET": "MCPSCU",
+    "Host": "dicom-mcp",
+    "Port": 11112
+  }
+}
+```
+
+If your Orthanc has `DicomAlwaysAllowFind`, `DicomAlwaysAllowGet`, etc. set to `true`, queries and downloads work without this, but C-MOVE operations still need the modality registered.
+
+### 4. Connect from n8n
+
+The MCP SSE endpoint is available inside the Docker network at:
+
+```
+http://dicom-mcp:8000/sse
+```
+
+Use this URL in n8n's MCP Client node to access all DICOM tools.
+
+### 5. Build and deploy to server
+
+The `deploy/` folder contains scripts to build the image locally and install it on a remote server.
+
+**On your local machine (or WSL):**
+
+```bash
+cd deploy
+bash build.sh
+```
+
+This builds the Docker image and saves it to `deploy/dicom-mcp.tar.gz`.
+
+**Copy to your server:**
+
+```bash
+scp deploy/dicom-mcp.tar.gz user@yourserver:/path/to/compose/deploy/
+scp configuration.docker.yaml user@yourserver:/path/to/compose/dicom-mcp/
+```
+
+**On the server:**
+
+```bash
+bash deploy/install.sh
+docker compose up -d dicom-mcp
+```
+
+When using a pre-built image, replace `build: context: ./dicom-mcp` with `image: dicom-mcp:latest` in your docker-compose.
+
 ## Tools you can call
 
 - Connection: `list_dicom_nodes`, `switch_dicom_node`, `verify_connection`

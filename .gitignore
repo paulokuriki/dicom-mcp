@@ -16,3 +16,6 @@ todo
 # Local artifacts
 downloads/
 previous_code_with_download/
+
+# Deploy artifacts
+deploy/*.tar.gz
